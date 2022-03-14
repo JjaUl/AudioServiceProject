@@ -3,6 +3,9 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/hwkim/Desktop/project/AudioServiceProject.git/AudioServiceProject/app/src/main/res/layout/activity_main.xml" value="0.36614583333333334" />
+        <entry key="..\:/Users/hwkim/Desktop/project/AudioServiceProject.git/AudioServiceProject/app/src/main/res/layout/fragment_controller.xml" value="0.274609375" />
+        <entry key="..\:/Users/hwkim/Desktop/project/AudioServiceProject.git/AudioServiceProject/app/src/main/res/layout/fragment_detail_play.xml" value="0.274609375" />
         <entry key="..\:/Users/hwkim/Desktop/project/AudioServiceProject.git/AudioServiceProject/app/src/main/res/layout/item_musiclist.xml" value="0.36614583333333334" />
         <entry key="..\:/Users/hwkim/Desktop/project/AudioServiceProject/app/src/main/res/drawable/asdf.xml" value="0.38229166666666664" />
         <entry key="..\:/Users/hwkim/Desktop/project/AudioServiceProject/app/src/main/res/drawable/ic_baseline_pause_24.xml" value="0.38229166666666664" />

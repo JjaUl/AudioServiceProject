@@ -1,5 +1,6 @@
 package jjaul.project.audioservice.ui.adapter
 
+import android.content.Context
 import android.graphics.Color
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -9,14 +10,13 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.google.android.exoplayer2.MediaMetadata
 import jjaul.project.audioservice.R
+import jjaul.project.audioservice.data.ManageMusicItem
 import jjaul.project.audioservice.data.MusicItem
 
-class MusicListAdapter: RecyclerView.Adapter<MusicListAdapter.ViewHolder>() {
-    private var list = mutableListOf<MusicItem>()
+class MusicListAdapter(context: Context): RecyclerView.Adapter<MusicListAdapter.ViewHolder>() {
+    private var list: MutableList<MusicItem> = ManageMusicItem.getInstance(context).getList()
     private var itemListener: OnItemClickListener? = null
-    private var curIdx: Int = 0
 
     public interface OnItemClickListener {
         fun onItemClick(v: View, pos: Int)
@@ -34,7 +34,7 @@ class MusicListAdapter: RecyclerView.Adapter<MusicListAdapter.ViewHolder>() {
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(list[position])
 
-        if (list[position].isSelected) {
+        if (list[position].isPlaying) {
             holder.itemView.setBackgroundColor(Color.parseColor("#EEEEEE"))
             holder.title.isSelected = true
             holder.subtitle.isSelected = true
@@ -49,24 +49,9 @@ class MusicListAdapter: RecyclerView.Adapter<MusicListAdapter.ViewHolder>() {
         return list.size
     }
 
-    fun setSelectedItem(eventIdx: Int) {
-        list[curIdx].isSelected = false
-        list[eventIdx].isSelected = true
-        notifyItemChanged(curIdx)
-        notifyItemChanged(eventIdx)
-        curIdx = eventIdx
-    }
-
     fun setMusicItem(data: MutableList<MusicItem>) {
         list = data
-    }
-
-    fun addMetaItem(metadata: MusicItem) {
-        list.add(metadata)
-    }
-
-    fun isContain(metadata: MusicItem): Boolean {
-        return list.contains(metadata)
+        notifyDataSetChanged()
     }
 
     inner class ViewHolder(private val view: View): RecyclerView.ViewHolder(view) {

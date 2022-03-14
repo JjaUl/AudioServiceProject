@@ -24,11 +24,11 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
                 val mmr = MediaMetadataRetriever()
                 mmr.setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
 
-                list.add(
-                    MusicItem(title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
-                        artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
-                        coverImg = mmr.embeddedPicture)
-                )
+//                list.add(
+//                    MusicItem(title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
+//                        artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
+//                        coverImg = mmr.embeddedPicture)
+//                )
             }
         }
 

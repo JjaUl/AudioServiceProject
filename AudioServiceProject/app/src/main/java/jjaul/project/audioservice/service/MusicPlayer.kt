@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
+import jjaul.project.audioservice.data.MusicItem
 
 class MusicPlayer(context: Context) {
     private var player: ExoPlayer? = null
@@ -34,8 +35,9 @@ class MusicPlayer(context: Context) {
 
     public fun isStart(): Boolean = isPlayerStarting
 
-    public fun setList(list: MutableList<MediaItem>) {
-        player?.setMediaItems(list)
+    public fun setList(list: MutableList<MusicItem>) {
+        val temp = list.map { it.mediaItem }
+        player?.setMediaItems(temp)
     }
 
     public fun setItem(item: MediaItem) {

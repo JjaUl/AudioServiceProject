@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.databinding.DataBindingUtil
 import jjaul.project.audioservice.R
+import jjaul.project.audioservice.data.ManageMusicItem
 import jjaul.project.audioservice.databinding.ActivityMainBinding
 import jjaul.project.audioservice.ui.fragment.DetailPlayFragment
 import jjaul.project.audioservice.ui.fragment.MediaControllerFragment
@@ -11,7 +12,7 @@ import jjaul.project.audioservice.ui.fragment.PlayListFragment
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-
+    val manager: ManageMusicItem by lazy { ManageMusicItem.getInstance(this) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)

@@ -3,25 +3,34 @@ package jjaul.project.audioservice.ui.fragment
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.setFragmentResultListener
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.disposables.Disposable
 import jjaul.project.audioservice.ui.MainActivity
 import jjaul.project.audioservice.R
 import jjaul.project.audioservice.databinding.FragmentControllerBinding
 import jjaul.project.audioservice.service.MusicPlayer
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class MediaControllerFragment: BaseFragment<FragmentControllerBinding>(FragmentControllerBinding::inflate) {
     private var activity: MainActivity? = null
     private var player: MusicPlayer? = null
+    private var seekbarDisposable: Disposable? = null
+    private var itemDisposable: Disposable? = null
+    private var listDisposable: Disposable? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -33,38 +42,41 @@ class MediaControllerFragment: BaseFragment<FragmentControllerBinding>(FragmentC
         activity = null
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setFragmentResultListener("getListPos") { _, bundle ->
-            player?.playIdx(bundle.getInt("pos"))
-            player?.play()
-        }
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        player = context?.let {
-            MusicPlayer(it).apply {
-                setList(getAssetsItems())
-                addListener(playerListener)
-            }
+        setObserving()
+        bindingViewEvent()
+    }
+
+    private fun setObserving() {
+        itemDisposable = activity?.manager?.getMusicItemSubject()?.subscribe { it ->
+            player?.playIdx(it.id)
+            player?.play()
         }
 
+        listDisposable = activity?.manager?.getMusicListSubject()?.subscribe({ list ->
+            player = context?.let {
+                MusicPlayer(it).apply {
+                    setList(list)
+                    addListener(playerListener)
+                }
+            }
+        }, { Toast.makeText(context,"음악리스트 로딩 실패!", Toast.LENGTH_SHORT).show() })
+    }
+
+    private fun bindingViewEvent() {
         binding.btnPlayControl.setOnClickListener {
             player?.let {
                 it.control()
-                setFragmentResult("getPlayerPos", bundleOf("pos" to it.currentIdx()))
-                setFragmentResult("getCurrentItem", bundleOf("pos" to it.currentIdx()))
+                activity?.manager?.getMusicItemSubject()?.onNext(activity?.manager?.getCurrentItem()!!)
             }
         }
 
         binding.btnNext.setOnClickListener {
             val nextIdx = player?.next()
             if (nextIdx != -1) {
-                setFragmentResult("getPlayerPos", bundleOf("pos" to nextIdx))
-                setFragmentResult("getCurrentItem", bundleOf("pos" to nextIdx))
+                activity?.manager?.getMusicItemSubject()?.onNext(activity?.manager?.getIdxItem(nextIdx!!)!!)
                 player?.play()
             }
         }
@@ -72,8 +84,7 @@ class MediaControllerFragment: BaseFragment<FragmentControllerBinding>(FragmentC
         binding.btnPrev.setOnClickListener {
             val prevIdx = player?.prev()
             if (prevIdx != -1) {
-                setFragmentResult("getPlayerPos", bundleOf("pos" to prevIdx))
-                setFragmentResult("getCurrentItem", bundleOf("pos" to prevIdx))
+                activity?.manager?.getMusicItemSubject()?.onNext(activity?.manager?.getIdxItem(prevIdx!!)!!)
                 player?.play()
             }
         }
@@ -95,18 +106,26 @@ class MediaControllerFragment: BaseFragment<FragmentControllerBinding>(FragmentC
 
     override fun onDestroyView() {
         player?.stop()
-        binding.playerSeekbar.removeCallbacks(updateSeekbarRunnable)
+        disposeObserve()
         super.onDestroyView()
+    }
+
+    private fun disposeObserve() {
+        seekbarDisposable?.dispose()
+        itemDisposable?.dispose()
+        listDisposable?.dispose()
     }
 
     private val playerListener = object: Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             if (isPlaying) {
                 binding.btnPlayControl.setImageResource(R.drawable.ic_baseline_pause_36)
-                binding.playerSeekbar.post(updateSeekbarRunnable)
+                seekbarDisposable = Observable.interval(500, TimeUnit.MILLISECONDS)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe({ updateSeek() }, { thr -> thr.printStackTrace()})
             } else {
                 binding.btnPlayControl.setImageResource(R.drawable.ic_baseline_play_arrow_36)
-                binding.playerSeekbar.removeCallbacks(updateSeekbarRunnable)
+                seekbarDisposable?.dispose()
             }
         }
 
@@ -115,6 +134,7 @@ class MediaControllerFragment: BaseFragment<FragmentControllerBinding>(FragmentC
             setSeekDate(playbackState)
         }
 
+        // seekbar 초기 세팅
         private fun setSeekDate(state: Int) {
             when(state) {
                 ExoPlayer.STATE_READY -> {
@@ -134,6 +154,7 @@ class MediaControllerFragment: BaseFragment<FragmentControllerBinding>(FragmentC
         }
     }
 
+    // duration, progress 시간 설정
     private fun setTime(view: TextView, time: Long) {
         val timeDate = Date(time)
         val timeFormat = SimpleDateFormat("mm:ss")
@@ -141,31 +162,11 @@ class MediaControllerFragment: BaseFragment<FragmentControllerBinding>(FragmentC
         view.text = timeFormat.format(timeDate)
     }
 
-    private val updateSeekbarRunnable = Runnable {
-        updateSeek()
-    }
-
+    // seekbar update
     private fun updateSeek() {
         player?.let {
             binding.playerSeekbar.progress =
                 (it.getPlayer()?.currentPosition!! / 1000).toInt()
         }
-
-        binding.playerSeekbar.postDelayed(updateSeekbarRunnable, 500)
-    }
-
-    private fun getAssetsItems(): MutableList<MediaItem> {
-        val asset = activity?.assets
-        val assetsItem = asset?.list("music")
-        val list = mutableListOf<MediaItem>()
-
-        if (assetsItem != null) {
-            for (element in assetsItem) {
-                val item = MediaItem.fromUri(Uri.parse("asset:///music/${element}"))
-                list.add(item)
-            }
-        }
-
-        return list
     }
 }
